@@ -1,0 +1,228 @@
+# ---
+# jupyter:
+#   jupytext:
+#     formats: ipynb,py:percent
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.19.5
+#   kernelspec:
+#     display_name: Python 3 (ipykernel)
+#     language: python
+#     name: python3
+# ---
+
+# %% [markdown]
+# ___
+#
+# <a href='http://www.pieriandata.com'> <img src='../Pierian_Data_Logo.png' /></a>
+# ___
+# # Linear Regression with Python
+#
+# ** This is mostly just code for reference. Please watch the video lecture for more info behind all of this code.**
+#
+# Your neighbor is a real estate agent and wants some help predicting housing prices for regions in the USA. It would be great if you could somehow create a model for her that allows her to put in a few features of a house and returns back an estimate of what the house would sell for.
+#
+# She has asked you if you could help her out with your new data science skills. You say yes, and decide that Linear Regression might be a good path to solve this problem!
+#
+# Your neighbor then gives you some information about a bunch of houses in regions of the United States,it is all in the data set: USA_Housing.csv.
+#
+# The data contains the following columns:
+#
+# * 'Avg. Area Income': Avg. Income of residents of the city house is located in.
+# * 'Avg. Area House Age': Avg Age of Houses in same city
+# * 'Avg. Area Number of Rooms': Avg Number of Rooms for Houses in same city
+# * 'Avg. Area Number of Bedrooms': Avg Number of Bedrooms for Houses in same city
+# * 'Area Population': Population of city house is located in
+# * 'Price': Price that the house sold at
+# * 'Address': Address for the house
+
+# %% [markdown]
+# **Let's get started!**
+# ## Check out the data
+# We've been able to get some data from your neighbor for housing prices as a csv set, let's get our environment ready with the libraries we'll need and then import the data!
+# ### Import Libraries
+
+# %% jupyter={"outputs_hidden": false}
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+# Suppress warnings temporarily
+warnings.filterwarnings("ignore")
+# %matplotlib inline
+
+# %% [markdown]
+# ### Check out the Data
+
+# %%
+USAhousing = pd.read_csv('USA_Housing.csv')
+
+# %% jupyter={"outputs_hidden": false}
+USAhousing.head()
+
+# %% jupyter={"outputs_hidden": false}
+USAhousing.info()
+
+# %% jupyter={"outputs_hidden": false}
+USAhousing.describe()
+
+# %% jupyter={"outputs_hidden": false}
+USAhousing.columns
+
+# %% [markdown]
+# # EDA
+#
+# Let's create some simple plots to check out the data!
+
+# %% jupyter={"outputs_hidden": false}
+sns.pairplot(USAhousing)
+
+# %% jupyter={"outputs_hidden": false}
+sns.distplot(USAhousing['Price'])
+
+# %% jupyter={"outputs_hidden": false}
+# Exclude non-numeric columns from the correlation calculation
+numeric_cols = USAhousing.select_dtypes(include=[np.number]).columns
+corr_matrix = USAhousing[numeric_cols].corr()
+
+# Create the heatmap using seaborn
+sns.heatmap(corr_matrix, annot=True, cmap='coolwarm')
+
+# %% [markdown]
+# ## Training a Linear Regression Model
+#
+# Let's now begin to train out regression model! We will need to first split up our data into an X array that contains the features to train on, and a y array with the target variable, in this case the Price column. We will toss out the Address column because it only has text info that the linear regression model can't use.
+#
+# ### X and y arrays
+
+# %% jupyter={"outputs_hidden": false}
+X = USAhousing[['Avg. Area Income', 'Avg. Area House Age', 'Avg. Area Number of Rooms',
+               'Avg. Area Number of Bedrooms', 'Area Population']]
+y = USAhousing['Price']
+
+# %% [markdown]
+# ## Train Test Split
+#
+# Now let's split the data into a training set and a testing set. We will train out model on the training set and then use the test set to evaluate the model.
+
+# %%
+from sklearn.model_selection import train_test_split
+
+# %%
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=101)
+
+# %% [markdown]
+# ## Creating and Training the Model
+
+# %%
+from sklearn.linear_model import LinearRegression
+
+# %%
+lm = LinearRegression()
+
+# %% jupyter={"outputs_hidden": false}
+lm.fit(X_train,y_train)
+
+# %% [markdown]
+# ## Model Evaluation
+#
+# Let's evaluate the model by checking out it's coefficients and how we can interpret them.
+
+# %% jupyter={"outputs_hidden": false}
+# print the intercept
+print(lm.intercept_) 
+
+# %% jupyter={"outputs_hidden": false}
+coeff_df = pd.DataFrame(lm.coef_,X.columns,columns=['Coefficient'])
+coeff_df
+
+# %% [markdown]
+# Interpreting the coefficients:
+#
+# - Holding all other features fixed, a 1 unit increase in **Avg. Area Income** is associated with an **increase of \$21.52 **.
+# - Holding all other features fixed, a 1 unit increase in **Avg. Area House Age** is associated with an **increase of \$164883.28 **.
+# - Holding all other features fixed, a 1 unit increase in **Avg. Area Number of Rooms** is associated with an **increase of \$122368.67 **.
+# - Holding all other features fixed, a 1 unit increase in **Avg. Area Number of Bedrooms** is associated with an **increase of \$2233.80 **.
+# - Holding all other features fixed, a 1 unit increase in **Area Population** is associated with an **increase of \$15.15 **.
+#
+# Does this make sense? Probably not because I made up this data. If you want real data to repeat this sort of analysis, check out the [boston dataset](http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_boston.html):
+#
+#
+
+# %% [markdown]
+#     from sklearn.datasets import load_boston
+#     boston = load_boston()
+#     print(boston.DESCR)
+#     boston_df = boston.data
+
+# %% [markdown]
+# ## Predictions from our Model
+#
+# Let's grab predictions off our test set and see how well it did!
+
+# %%
+predictions = lm.predict(X_test)
+
+# %% jupyter={"outputs_hidden": false}
+plt.scatter(y_test,predictions)
+
+# %% [markdown]
+# **Residual Histogram**
+
+# %% jupyter={"outputs_hidden": false}
+sns.distplot((y_test-predictions),bins=50);
+
+# %%
+plt.scatter(y_test,predictions, color='red')
+plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'k--', lw=4)
+plt.xlabel('Actual')
+plt.ylabel('Predicted')
+plt.title('Actual vs Predicted')
+plt.show()
+
+# %% [markdown]
+# ## Regression Evaluation Metrics
+#
+#
+# Here are three common evaluation metrics for regression problems:
+#
+# **Mean Absolute Error** (MAE) is the mean of the absolute value of the errors:
+#
+# $$\frac 1n\sum_{i=1}^n|y_i-\hat{y}_i|$$
+#
+# **Mean Squared Error** (MSE) is the mean of the squared errors:
+#
+# $$\frac 1n\sum_{i=1}^n(y_i-\hat{y}_i)^2$$
+#
+# **Root Mean Squared Error** (RMSE) is the square root of the mean of the squared errors:
+#
+# $$\sqrt{\frac 1n\sum_{i=1}^n(y_i-\hat{y}_i)^2}$$
+#
+# Comparing these metrics:
+#
+# - **MAE** is the easiest to understand, because it's the average error.
+# - **MSE** is more popular than MAE, because MSE "punishes" larger errors, which tends to be useful in the real world.
+# - **RMSE** is even more popular than MSE, because RMSE is interpretable in the "y" units.
+#
+# All of these are **loss functions**, because we want to minimize them.
+
+# %%
+from sklearn import metrics
+
+# %% jupyter={"outputs_hidden": false}
+print('MAE:', metrics.mean_absolute_error(y_test, predictions))
+print('MSE:', metrics.mean_squared_error(y_test, predictions))
+print('RMSE:', np.sqrt(metrics.mean_squared_error(y_test, predictions)))
+print("Explain variance score =", metrics.explained_variance_score(y_test, predictions))
+print("R2 score train=", metrics.r2_score(y_test, predictions))
+#An R2 score near 1 means that the model is able to predict the data very well. Keeping track of every single metric can get tedious, so we pick one or two metrics to evaluate our model. A good practice is to make sure that the mean squared error is low and the explained variance score is high.
+
+# %% [markdown]
+# This was your first real Machine Learning Project! Congrats on helping your neighbor out! We'll let this end here for now, but go ahead and explore the Boston Dataset mentioned earlier if this particular data set was interesting to you! 
+#
+# Up next is your own Machine Learning Project!
+#
+# ## Great Job!
